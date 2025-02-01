@@ -20,7 +20,6 @@ class User(BaseModel):
     number = db.Column(db.String)  #
     date = db.Column(db.Date)  #
     gender = db.Column(db.String)  #
-    country_id = db.Column(db.Integer, db.ForeignKey("countries.id"))  #
     region_id = db.Column(db.Integer, db.ForeignKey("regions.id"))  #
     city_id = db.Column(db.Integer, db.ForeignKey("cities.id"))  #
     address = db.Column(db.String)  #
@@ -80,10 +79,6 @@ class User(BaseModel):
             "personal_id": self.personal_id,
             "date": str(self.date),
             "gender": self.gender,
-            "country": {
-                "id": self.country_id,
-                "name": Country.query.get(self.country_id).country_name
-            },
             "region": {
                 "id": self.region_id,
                 "name": Region.query.get(self.region_id).region_name
@@ -146,58 +141,18 @@ class UserAnswer(BaseModel):
         return data
 
 
-class Country(BaseModel):
-    __tablename__ = "countries"
-
-    id = db.Column(db.Integer, primary_key=True)
-    country_name = db.Column(db.String)
-
-    user = db.relationship("User", backref="country")
-
-
-    @classmethod
-    def get_locations(cls):
-        data = [
-            {
-                "id": country.id,
-                "name": country.country_name,
-                "regions": [
-                    {
-                        "id": region.id,
-                        "name": region.region_name,
-                        "cities": [
-                            {
-                                "id": city.id,
-                                "name": city.city_name,
-                                "universities": [
-                                    {
-                                        "id": university.id,
-                                        "name": university.university_name
-                                    }
-                                    for university in University.query.filter_by(city_id=city.id).all()
-                                ]
-                            }
-                            for city in City.query.filter_by(region_id=region.id).all()
-                        ]
-                    }
-                    for region in Region.query.filter_by(country_id=country.id).all()
-                ]
-            }
-            for country in cls.query.all()
-        ]
-        
-        return data
 
 
 class Region(BaseModel):
     __tablename__ = "regions"
 
     id = db.Column(db.Integer, primary_key=True)
-    country_id = db.Column(db.Integer, db.ForeignKey("countries.id"))
     region_name = db.Column(db.String)
 
     user = db.relationship("User", backref="region")
-    country = db.relationship("Country", backref="region")
+
+
+
 
 
 class City(BaseModel):
@@ -220,6 +175,32 @@ class University(BaseModel):
 
     user = db.relationship("User", backref="university")
     city = db.relationship("City", backref="university")
+
+
+    @classmethod
+    def get_universities(cls, city_id):
+        universities = []
+        for university in cls.query.filter_by(city_id=city_id).all():
+            universities.append({"id": university.id, "name": university.university_name})
+        return universities
+
+
+class School(BaseModel):
+    __tablename__ = "schools"
+
+    id = db.Column(db.Integer, primary_key=True)
+    city_id = db.Column(db.Integer, db.ForeignKey("cities.id"))
+    school_name = db.Column(db.String)
+
+    user = db.relationship("User", backref="school")
+    city = db.relationship("City", backref="school")
+
+    @classmethod
+    def get_schools(cls, city_id):
+        schools = []
+        for school in cls.query.filter_by(city_id=city_id).all():
+            schools.append({"id": school.id, "name": school.school_name})
+        return schools
 
 
 class Certificate(BaseModel):

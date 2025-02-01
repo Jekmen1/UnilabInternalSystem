@@ -92,19 +92,9 @@ class RegistrationApi(Resource):
                 html=html, recipients=parser["email"])
 
         return "Successfully registered a User", 200
-        
 
-    def get(self):
 
-        locations = Country.get_locations()
-        roles = Role.get_roles()
 
-        data = {
-            "locations": locations,
-            "roles": roles
-        }
-
-        return data, 200
 
 
 class AuthorizationApi(Resource):
